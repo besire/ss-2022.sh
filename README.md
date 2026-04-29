@@ -5,20 +5,20 @@
 **以下脚本根据需要选择**
 + ss 2022 | snell | shadowtls 多功能管理菜单
 ```bash
-bash <(curl -L -s menu.jinqians.com)
+curl -L -s https://raw.githubusercontent.com/besire/ss-2022.sh/refs/heads/feat/alpine-support/menu.sh | bash
 ```
 + ss 2022 安装脚本
 ```bash
-bash <(curl -L -s ss.jinqians.com)
+curl -L -s https://raw.githubusercontent.com/besire/ss-2022.sh/refs/heads/feat/alpine-support/ss-2022.sh | bash
 ```
 + Alpine Linux 首次运行前
 ```bash
 apk add --no-cache bash curl wget
-bash <(curl -L -s menu.jinqians.com)
+curl -L -s https://raw.githubusercontent.com/besire/ss-2022.sh/refs/heads/feat/alpine-support/menu.sh | bash
 ```
 + 下载脚本，本地执行
 ```bash
-wget -N --no-check-certificate https://raw.githubusercontent.com/jinqians/ss-2022.sh/main/ss-2022.sh && chmod +x ss-2022.sh && ./ss-2022.sh
+wget -N --no-check-certificate https://raw.githubusercontent.com/besire/ss-2022.sh/refs/heads/feat/alpine-support/ss-2022.sh && chmod +x ss-2022.sh && ./ss-2022.sh
 ```
 
 # Shadowsocks Rust + ShadowTLS 安装管理脚本

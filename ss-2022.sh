@@ -25,8 +25,9 @@ VERSION_FILE="/etc/ss-rust/ver.txt"
 SYSCTL_CONF="/etc/sysctl.d/local.conf"
 MAINLAND_BLOCK_SCRIPT="/usr/local/bin/block-mainland.sh"
 MAINLAND_EXTRACT_SCRIPT="/usr/local/bin/extract-cn-ip-from-mmdb.py"
-MAINLAND_BLOCK_REPO_URL="https://raw.githubusercontent.com/jinqians/ss-2022.sh/refs/heads/main/block-mainland.sh"
-MAINLAND_EXTRACT_REPO_URL="https://raw.githubusercontent.com/jinqians/ss-2022.sh/refs/heads/main/extract-cn-ip-from-mmdb.py"
+REPO_RAW_URL="https://raw.githubusercontent.com/besire/ss-2022.sh/refs/heads/feat/alpine-support"
+MAINLAND_BLOCK_REPO_URL="${REPO_RAW_URL}/block-mainland.sh"
+MAINLAND_EXTRACT_REPO_URL="${REPO_RAW_URL}/extract-cn-ip-from-mmdb.py"
 
 # 颜色定义
 readonly RED='\033[0;31m'
@@ -831,7 +832,7 @@ Install() {
     install_service
 
     echo -e "${Info} 创建命令快捷方式..."
-    curl -L -s ss.jinqians.com -o "/usr/local/bin/ss-2022.sh"
+    curl -L -s "${REPO_RAW_URL}/ss-2022.sh" -o "/usr/local/bin/ss-2022.sh"
     chmod +x "/usr/local/bin/ss-2022.sh"
     if [ -f "/usr/local/bin/ssrust" ]; then
         rm -f "/usr/local/bin/ssrust"
@@ -1188,7 +1189,7 @@ Update_Shell() {
     
     # 下载最新版本进行版本对比
     local temp_file="/tmp/ss-2022.sh"
-    if ! wget --no-check-certificate -O ${temp_file} "https://raw.githubusercontent.com/jinqians/ss-2022.sh/refs/heads/main/ss-2022.sh"; then
+    if ! wget --no-check-certificate -O ${temp_file} "${REPO_RAW_URL}/ss-2022.sh"; then
         echo -e "${Error} 下载最新脚本失败！"
         rm -f ${temp_file}
         return 1
@@ -1242,7 +1243,7 @@ install_shadowtls() {
     echo -e "${Info} 开始下载 ShadowTLS 安装脚本..."
     
     # 下载 ShadowTLS 脚本
-    wget -N --no-check-certificate https://raw.githubusercontent.com/jinqians/ss-2022.sh/refs/heads/main/shadowtls.sh
+    wget -N --no-check-certificate "${REPO_RAW_URL}/shadowtls.sh"
     
     if [ $? -ne 0 ]; then
         echo -e "${Error} ShadowTLS 脚本下载失败！"

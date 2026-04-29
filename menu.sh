@@ -17,8 +17,9 @@ RESET='\033[0m'
 current_version="3.1"
 
 # 中国大陆屏蔽脚本仓库地址
-MAINLAND_BLOCK_URL="https://raw.githubusercontent.com/jinqians/ss-2022.sh/refs/heads/main/block-mainland.sh"
-MAINLAND_EXTRACT_URL="https://raw.githubusercontent.com/jinqians/ss-2022.sh/refs/heads/main/extract-cn-ip-from-mmdb.py"
+REPO_RAW_URL="https://raw.githubusercontent.com/besire/ss-2022.sh/refs/heads/feat/alpine-support"
+MAINLAND_BLOCK_URL="${REPO_RAW_URL}/block-mainland.sh"
+MAINLAND_EXTRACT_URL="${REPO_RAW_URL}/extract-cn-ip-from-mmdb.py"
 MAINLAND_SCRIPT_DIR="/usr/local/share/ss-2022"
 SERVICE_MANAGER=""
 SERVICE_DIR="/etc/systemd/system"
@@ -106,7 +107,7 @@ install_global_command() {
     echo -e "${CYAN}正在安装全局命令...${RESET}"
     
     # 下载脚本到 /usr/local/bin
-    curl -L -s menu.jinqians.com -o "/usr/local/bin/menu.sh"
+    curl -L -s "${REPO_RAW_URL}/menu.sh" -o "/usr/local/bin/menu.sh"
     chmod +x "/usr/local/bin/menu.sh"
     
     # 创建软链接
@@ -331,7 +332,7 @@ update_script() {
     TMP_SCRIPT=$(mktemp)
     
     # 下载最新版本
-    if curl -sL https://raw.githubusercontent.com/jinqians/menu/main/menu.sh -o "$TMP_SCRIPT"; then
+    if curl -sL "${REPO_RAW_URL}/menu.sh" -o "$TMP_SCRIPT"; then
         # 获取新版本号
         new_version=$(grep "current_version=" "$TMP_SCRIPT" | cut -d'"' -f2)
         
@@ -384,7 +385,7 @@ manage_snell() {
 
 # 安装/管理 SS-2022
 manage_ss_rust() {
-    bash <(curl -sL https://raw.githubusercontent.com/jinqians/ss-2022.sh/main/ss-2022.sh)
+    curl -sL "${REPO_RAW_URL}/ss-2022.sh" | bash
 }
 
 # 管理中国大陆IP屏蔽
@@ -409,7 +410,7 @@ manage_mainland_block() {
 
 # 安装/管理 ShadowTLS
 manage_shadowtls() {
-    bash <(curl -sL https://raw.githubusercontent.com/jinqians/ss-2022.sh/main/shadowtls.sh)
+    curl -sL "${REPO_RAW_URL}/shadowtls.sh" | bash
 }
 
 # 安装/管理 VLESS Reality
