@@ -28,6 +28,58 @@ SNELL_CONF_DIR="/etc/snell"
 SNELL_CONF_FILE="${SNELL_CONF_DIR}/users/snell-main.conf"
 USERS_DIR="${SNELL_CONF_DIR}/users"
 
+python_qrcode_available() {
+    command -v python3 >/dev/null 2>&1 || return 1
+    python3 - <<'PY' >/dev/null 2>&1
+import qrcode
+PY
+}
+
+qrcode_backend_available() {
+    command -v qrencode >/dev/null 2>&1 || python_qrcode_available
+}
+
+install_qrcode_backend() {
+    qrcode_backend_available && return 0
+
+    if [ "$OS_TYPE" = "alpine" ] && command -v apk >/dev/null 2>&1; then
+        apk add --no-cache qrencode 2>/dev/null && return 0
+        apk add --no-cache python3 py3-qrcode 2>/dev/null && return 0
+    elif [ "$OS_TYPE" = "centos" ] && command -v yum >/dev/null 2>&1; then
+        yum install -y qrencode 2>/dev/null && return 0
+    elif command -v apt-get >/dev/null 2>&1; then
+        apt-get install -y qrencode 2>/dev/null && return 0
+    fi
+
+    echo -e "${YELLOW}未能安装二维码生成工具，将仅显示分享链接${RESET}"
+    return 1
+}
+
+print_qrcode() {
+    local content="$1"
+
+    if command -v qrencode >/dev/null 2>&1; then
+        printf '%s' "$content" | qrencode -t UTF8
+        return $?
+    fi
+
+    if python_qrcode_available; then
+        python3 - "$content" <<'PY'
+import sys
+import qrcode
+
+qr = qrcode.QRCode(border=1)
+qr.add_data(sys.argv[1])
+qr.make(fit=True)
+qr.print_ascii(out=sys.stdout, tty=False, invert=True)
+PY
+        return $?
+    fi
+
+    echo -e "${YELLOW}未安装二维码生成后端，无法生成二维码${RESET}"
+    return 1
+}
+
 # 检查是否以 root 权限运行
 check_root() {
     if [ "$(id -u)" != "0" ]; then
@@ -82,7 +134,8 @@ install_requirements() {
         yum install -y wget curl jq net-tools coreutils
     elif command -v apk >/dev/null 2>&1; then
         apk update
-        apk add --no-cache bash wget curl jq net-tools coreutils grep openrc
+        apk add --no-cache bash wget curl jq net-tools coreutils grep openrc python3
+        install_qrcode_backend || true
     else
         echo -e "${RED}未支持的包管理器，请手动安装 wget curl jq net-tools${RESET}"
         exit 1
@@ -494,10 +547,11 @@ generate_ss_links() {
     echo -e "${GREEN}SS + ShadowTLS 链接：${RESET}${ss_url}"
     
     echo -e "\n${YELLOW}=== Shadowrocket二维码 ===${RESET}"
-    if command -v qrencode >/dev/null 2>&1; then
-        qrencode -t UTF8 "${ss_url}"
+    install_qrcode_backend || true
+    if qrcode_backend_available; then
+        print_qrcode "${ss_url}"
     else
-        echo -e "${RED}未安装 qrencode，跳过二维码生成${RESET}"
+        echo -e "${RED}未安装二维码生成工具，跳过二维码生成${RESET}"
     fi
 
     echo -e "\n${YELLOW}=== Clash Meta 配置 ===${RESET}"

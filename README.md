@@ -39,7 +39,7 @@ wget -N --no-check-certificate https://raw.githubusercontent.com/besire/ss-2022.
 - 支持的操作系统：Debian / Ubuntu / CentOS / Alpine Linux
 - 需要 root 权限
 - 需要 curl、wget、jq 等基础工具，脚本会按系统自动调用 apt-get、yum 或 apk 安装缺失依赖
-- 二维码依赖 `qrencode` 为可选项；若 Alpine 仓库未提供该包，脚本仍会输出分享链接并跳过二维码
+- 二维码支持优先使用 `qrencode`；若 Alpine 仓库未提供该包，脚本会自动尝试安装 `python3` + `py3-qrcode` 作为终端二维码后端
 - Alpine Linux 使用 OpenRC 管理服务，脚本会自动创建 `/etc/init.d` 服务并使用 musl 版本的 Shadowsocks Rust 二进制
 
 ## 主要功能

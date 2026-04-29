@@ -62,6 +62,58 @@ error_exit() {
     exit 1
 }
 
+python_qrcode_available() {
+    command -v python3 >/dev/null 2>&1 || return 1
+    python3 - <<'PY' >/dev/null 2>&1
+import qrcode
+PY
+}
+
+qrcode_backend_available() {
+    command -v qrencode >/dev/null 2>&1 || python_qrcode_available
+}
+
+install_qrcode_backend() {
+    qrcode_backend_available && return 0
+
+    if [[ ${OS_TYPE} == "alpine" ]] && command -v apk >/dev/null 2>&1; then
+        apk add --no-cache qrencode 2>/dev/null && return 0
+        apk add --no-cache python3 py3-qrcode 2>/dev/null && return 0
+    elif [[ ${OS_TYPE} == "centos" ]] && command -v yum >/dev/null 2>&1; then
+        yum install -y qrencode 2>/dev/null && return 0
+    elif command -v apt-get >/dev/null 2>&1; then
+        apt-get install -y qrencode 2>/dev/null && return 0
+    fi
+
+    echo -e "${WARNING} 未能安装二维码生成工具，将仅显示分享链接"
+    return 1
+}
+
+print_qrcode() {
+    local content="$1"
+
+    if command -v qrencode >/dev/null 2>&1; then
+        printf '%s' "${content}" | qrencode -t UTF8
+        return $?
+    fi
+
+    if python_qrcode_available; then
+        python3 - "${content}" <<'PY'
+import sys
+import qrcode
+
+qr = qrcode.QRCode(border=1)
+qr.add_data(sys.argv[1])
+qr.make(fit=True)
+qr.print_ascii(out=sys.stdout, tty=False, invert=True)
+PY
+        return $?
+    fi
+
+    echo -e "${WARNING} 未安装二维码生成后端，无法生成二维码"
+    return 1
+}
+
 # 检查 root 权限
 check_root() {
     if [[ $EUID != 0 ]]; then
@@ -462,8 +514,8 @@ install_dependencies() {
         yum install -y jq gzip wget curl unzip xz openssl qrencode tar iptables-services
     elif [[ ${OS_TYPE} == "alpine" ]]; then
         apk update
-        apk add --no-cache bash jq gzip wget curl unzip xz openssl tar coreutils iptables openrc tzdata iproute2 grep
-        apk add --no-cache qrencode 2>/dev/null || echo -e "${WARNING} Alpine 仓库未提供 qrencode，将跳过二维码生成"
+        apk add --no-cache bash jq gzip wget curl unzip xz openssl tar coreutils iptables openrc tzdata iproute2 grep python3
+        install_qrcode_backend || true
     else
         apt-get update
         apt-get install -y jq gzip wget curl unzip xz-utils openssl qrencode tar iptables
@@ -1029,27 +1081,24 @@ urlsafe_base64() {
 
 # 生成链接和二维码
 Link_QR() {
-    local has_qrencode=false
-    if command -v qrencode >/dev/null 2>&1; then
-        has_qrencode=true
-    fi
+    install_qrcode_backend || true
 
     if [[ "${ipv4}" != "IPv4_Error" ]]; then
         SSbase64=$(urlsafe_base64 "${SS_METHOD}:${SS_PASSWORD}@${ipv4}:${SS_PORT}")
         SSurl="ss://${SSbase64}"
         link_ipv4=" 链接  [IPv4]：${Green_font_prefix}${SSurl}${Font_color_suffix}"
-        if [[ ${has_qrencode} == true ]]; then
+        if qrcode_backend_available; then
             echo -e "\n IPv4 二维码:"
-            echo "${SSurl}" | qrencode -t utf8
+            print_qrcode "${SSurl}"
         fi
     fi
     if [[ "${ipv6}" != "IPv6_Error" ]]; then
         SSbase64=$(urlsafe_base64 "${SS_METHOD}:${SS_PASSWORD}@${ipv6}:${SS_PORT}")
         SSurl="ss://${SSbase64}"
         link_ipv6=" 链接  [IPv6]：${Green_font_prefix}${SSurl}${Font_color_suffix}"
-        if [[ ${has_qrencode} == true ]]; then
+        if qrcode_backend_available; then
             echo -e "\n IPv6 二维码:"
-            echo "${SSurl}" | qrencode -t utf8
+            print_qrcode "${SSurl}"
         fi
     fi
 }
@@ -1113,17 +1162,18 @@ View() {
     [[ ! -z "${ss_url_ipv6}" ]] && echo -e "${Green_font_prefix}IPv6 链接：${Font_color_suffix}${ss_url_ipv6}"
 
     echo -e "\n${Yellow_font_prefix}=== Shadowsocks 二维码 ===${Font_color_suffix}"
-    if command -v qrencode &> /dev/null; then
+    install_qrcode_backend || true
+    if qrcode_backend_available; then
         if [[ ! -z "${ss_url_ipv4}" ]]; then
             echo -e "${Green_font_prefix}IPv4 二维码：${Font_color_suffix}"
-            echo "${ss_url_ipv4}" | qrencode -t UTF8
+            print_qrcode "${ss_url_ipv4}"
         fi
         if [[ ! -z "${ss_url_ipv6}" ]]; then
             echo -e "${Green_font_prefix}IPv6 二维码：${Font_color_suffix}"
-            echo "${ss_url_ipv6}" | qrencode -t UTF8
+            print_qrcode "${ss_url_ipv6}"
         fi
     else
-        echo -e "${Red_font_prefix}未安装 qrencode，无法生成二维码${Font_color_suffix}"
+        echo -e "${Red_font_prefix}未安装二维码生成工具，无法生成二维码${Font_color_suffix}"
     fi
 
     echo -e "\n${Yellow_font_prefix}=== Surge 配置 ===${Font_color_suffix}"
@@ -1160,10 +1210,11 @@ View() {
         [[ "${ipv4}" != "IPv4_Error" ]] && echo -e "${Green_font_prefix}合并链接：${Font_color_suffix}${ss_stls_url}"
 
         echo -e "\n${Yellow_font_prefix}=== SS + ShadowTLS 二维码 ===${Font_color_suffix}"
-        if command -v qrencode &> /dev/null; then
-            [[ "${ipv4}" != "IPv4_Error" ]] && echo "${ss_stls_url}" | qrencode -t UTF8
+        install_qrcode_backend || true
+        if qrcode_backend_available; then
+            [[ "${ipv4}" != "IPv4_Error" ]] && print_qrcode "${ss_stls_url}"
         else
-            echo -e "${Red_font_prefix}未安装 qrencode，无法生成二维码${Font_color_suffix}"
+            echo -e "${Red_font_prefix}未安装二维码生成工具，无法生成二维码${Font_color_suffix}"
         fi
 
         echo -e "\n${Yellow_font_prefix}=== Surge Shadowsocks + ShadowTLS 配置 ===${Font_color_suffix}"
