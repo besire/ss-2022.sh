@@ -494,8 +494,12 @@ generate_ss_links() {
     echo -e "${GREEN}SS + ShadowTLS 链接：${RESET}${ss_url}"
     
     echo -e "\n${YELLOW}=== Shadowrocket二维码 ===${RESET}"
-    qrencode -t UTF8 "${ss_url}"
-    
+    if command -v qrencode >/dev/null 2>&1; then
+        qrencode -t UTF8 "${ss_url}"
+    else
+        echo -e "${RED}未安装 qrencode，跳过二维码生成${RESET}"
+    fi
+
     echo -e "\n${YELLOW}=== Clash Meta 配置 ===${RESET}"
     echo -e "proxies:"
     echo -e "  - name: SS-${server_ip}"

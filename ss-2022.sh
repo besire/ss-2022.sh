@@ -462,7 +462,8 @@ install_dependencies() {
         yum install -y jq gzip wget curl unzip xz openssl qrencode tar iptables-services
     elif [[ ${OS_TYPE} == "alpine" ]]; then
         apk update
-        apk add --no-cache bash jq gzip wget curl unzip xz openssl qrencode tar coreutils iptables openrc tzdata iproute2 grep
+        apk add --no-cache bash jq gzip wget curl unzip xz openssl tar coreutils iptables openrc tzdata iproute2 grep
+        apk add --no-cache qrencode 2>/dev/null || echo -e "${WARNING} Alpine 仓库未提供 qrencode，将跳过二维码生成"
     else
         apt-get update
         apt-get install -y jq gzip wget curl unzip xz-utils openssl qrencode tar iptables
@@ -1028,19 +1029,28 @@ urlsafe_base64() {
 
 # 生成链接和二维码
 Link_QR() {
+    local has_qrencode=false
+    if command -v qrencode >/dev/null 2>&1; then
+        has_qrencode=true
+    fi
+
     if [[ "${ipv4}" != "IPv4_Error" ]]; then
         SSbase64=$(urlsafe_base64 "${SS_METHOD}:${SS_PASSWORD}@${ipv4}:${SS_PORT}")
         SSurl="ss://${SSbase64}"
         link_ipv4=" 链接  [IPv4]：${Green_font_prefix}${SSurl}${Font_color_suffix}"
-        echo -e "\n IPv4 二维码:"
-        echo "${SSurl}" | qrencode -t utf8
+        if [[ ${has_qrencode} == true ]]; then
+            echo -e "\n IPv4 二维码:"
+            echo "${SSurl}" | qrencode -t utf8
+        fi
     fi
     if [[ "${ipv6}" != "IPv6_Error" ]]; then
         SSbase64=$(urlsafe_base64 "${SS_METHOD}:${SS_PASSWORD}@${ipv6}:${SS_PORT}")
         SSurl="ss://${SSbase64}"
         link_ipv6=" 链接  [IPv6]：${Green_font_prefix}${SSurl}${Font_color_suffix}"
-        echo -e "\n IPv6 二维码:"
-        echo "${SSurl}" | qrencode -t utf8
+        if [[ ${has_qrencode} == true ]]; then
+            echo -e "\n IPv6 二维码:"
+            echo "${SSurl}" | qrencode -t utf8
+        fi
     fi
 }
 
