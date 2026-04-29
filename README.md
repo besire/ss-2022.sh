@@ -1,6 +1,6 @@
 ## 食用说明
 ### 安装脚本
-*请确保已安装curl/wget* 
+*Debian / Ubuntu / CentOS 请确保已安装 curl 或 wget；Alpine Linux 最小系统请先安装 bash 和 curl/wget。*
 
 **以下脚本根据需要选择**
 + ss 2022 | snell | shadowtls 多功能管理菜单
@@ -10,6 +10,11 @@ bash <(curl -L -s menu.jinqians.com)
 + ss 2022 安装脚本
 ```bash
 bash <(curl -L -s ss.jinqians.com)
+```
++ Alpine Linux 首次运行前
+```bash
+apk add --no-cache bash curl wget
+bash <(curl -L -s menu.jinqians.com)
 ```
 + 下载脚本，本地执行
 ```bash
@@ -24,15 +29,17 @@ wget -N --no-check-certificate https://raw.githubusercontent.com/jinqians/ss-202
 
 - 支持 Shadowsocks Rust 的完整管理
 - 支持 ShadowTLS V3 的安装和配置
+- 支持 systemd 和 OpenRC 服务管理
 - 自动生成配置信息和分享链接
 - 支持多种加密方式
 - 支持多客户端配置格式
 
 ## 系统要求
 
-- 支持的操作系统：Debian / Ubuntu / CentOS
+- 支持的操作系统：Debian / Ubuntu / CentOS / Alpine Linux
 - 需要 root 权限
-- 需要 curl、wget、jq 等基础工具
+- 需要 curl、wget、jq 等基础工具，脚本会按系统自动调用 apt-get、yum 或 apk 安装缺失依赖
+- Alpine Linux 使用 OpenRC 管理服务，脚本会自动创建 `/etc/init.d` 服务并使用 musl 版本的 Shadowsocks Rust 二进制
 
 ## 主要功能
 
@@ -98,13 +105,33 @@ wget -N --no-check-certificate https://raw.githubusercontent.com/jinqians/ss-202
 2. 配置文件会自动备份
 3. 更新脚本前建议先备份配置
 4. 请确保安装过程中网络连接稳定
+5. Alpine Linux 最小系统默认可能没有 bash，首次运行前请先执行 `apk add --no-cache bash curl wget`
+
+## 服务管理
+
+### Debian / Ubuntu / CentOS
+```bash
+systemctl status ss-rust
+systemctl restart ss-rust
+systemctl status shadowtls-ss
+journalctl -xe --unit ss-rust
+```
+
+### Alpine Linux
+```bash
+rc-service ss-rust status
+rc-service ss-rust restart
+rc-service shadowtls-ss status
+tail -n 100 /var/log/ss-rust.log
+```
 
 ## 问题排查
 
 如果遇到问题，可以：
-1. 查看服务状态：`systemctl status ss-rust`
-2. 查看服务日志：`journalctl -xe --unit ss-rust`
-3. 查看 ShadowTLS 状态：`systemctl status shadowtls`
+1. 确认当前系统使用 systemd 还是 OpenRC，并使用上面的对应命令查看服务状态
+2. Debian / Ubuntu / CentOS 查看服务日志：`journalctl -xe --unit ss-rust`
+3. Alpine Linux 查看服务日志：`tail -n 100 /var/log/ss-rust.log`
+4. 检查 Shadowsocks Rust 和 ShadowTLS 的配置文件是否存在且端口未被占用
 
 ## 更新日志
 
